@@ -11,6 +11,7 @@ import { useState, useEffect } from "react";
 import moment from "moment";
 
 export default function MainContent() {
+  const [nextPrayerIndex, setNextPrayerIndex] = useState(2);
   const [timings, setTimings] = useState({});
   const [city, setCity] = useState("Rabat");
   const getTimings = async (selectedCity) => {
@@ -24,13 +25,69 @@ export default function MainContent() {
   };
   useEffect(() => {
     getTimings(city);
+  }, [city]);
+  useEffect(() => {
+    let interval = setInterval(() => {
+      setupContdownTimer();
+    }, 1000);
     const t = moment();
     setToday(t.format("LLLL"));
-  }, [city]);
+    return () => {
+      clearInterval;
+    };
+  }, []);
+
+  const setupContdownTimer = () => {
+    const momentNow = moment();
+    let prayerIndex = 2;
+    if (
+      momentNow.isAfter(moment(timings["Fajr"], "hh:mm")) &&
+      momentNow.isBefore(moment(timings["Dhuhr"], "hh:mm"))
+    ) {
+      prayerIndex = 1;
+    } else if (
+      momentNow.isAfter(moment(timings["Dhuhr"], "hh:mm")) &&
+      momentNow.isBefore(moment(timings["Asr"], "hh:mm"))
+    ) {
+      prayerIndex = 2;
+    } else if (
+      momentNow.isAfter(moment(timings["Asr"], "hh:mm")) &&
+      momentNow.isBefore(moment(timings["Maghrib"], "hh:mm"))
+    ) {
+      prayerIndex = 3;
+    } else if (
+      momentNow.isAfter(moment(timings["Maghrib"], "hh:mm")) &&
+      momentNow.isBefore(moment(timings["Isha"], "hh:mm"))
+    ) {
+      prayerIndex = 4;
+    } else {
+      prayerIndex = 0;
+    }
+    setNextPrayerIndex(prayerIndex);
+    const nextPrayerObject = prayersArray[prayerIndex];
+    const nextPrayerTime = timings[nextPrayerObject.key];
+    const nextPrayerTimeMoment = moment(nextPrayerTime, "hh:mm");
+    const remainingTime = moment(nextPrayerTime, "hh:mm").diff(momentNow);
+    if (remainingTime < 0) {
+      const midnightDiff = moment("23:59:59", "hh:mm:ss").diff(momentNow);
+      const fajrToMidnightDiff = nextPrayerTimeMoment.diff(
+        moment("00:00:00", "hh:mm:ss")
+      );
+      const totalDifference = midnightDiff + fajrToMidnightDiff;
+    }
+    const durationRemainingTime = moment.duration(remainingTime);
+  };
 
   const handleCityChange = (event) => {
     setCity(event.target.value);
   };
+  const prayersArray = [
+    { key: "Fajr", displayName: "Fajr" },
+    { key: "Dhuhr", displayName: "Dhuhr" },
+    { key: "Asr", displayName: "Asr" },
+    { key: "Maghrib", displayName: "Maghrib" },
+    { key: "Isha", displayName: "Isha" },
+  ];
   const [today, setToday] = useState("");
   return (
     <>
@@ -43,7 +100,9 @@ export default function MainContent() {
         </Grid>
         <Grid xs={6}>
           <div>
-            <h2>Temps restant pour Isha </h2>
+            <h2>
+              Temps restant pour {prayersArray[nextPrayerIndex].displayName}{" "}
+            </h2>
             <h1>1:22</h1>
           </div>
         </Grid>
