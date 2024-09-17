@@ -14,10 +14,20 @@ export default function MainContent() {
   const [nextPrayerIndex, setNextPrayerIndex] = useState(2);
   const [timings, setTimings] = useState({});
   const [city, setCity] = useState("Rabat");
+  const [remainingTime, setRemainingTime] = useState("");
+  const prayersArray = [
+    { key: "Fajr", displayName: "Fajr" },
+    { key: "Dhuhr", displayName: "Dhuhr" },
+    { key: "Asr", displayName: "Asr" },
+    { key: "Maghrib", displayName: "Maghrib" },
+    { key: "Isha", displayName: "Isha" },
+  ];
+  const [today, setToday] = useState("");
   const getTimings = async (selectedCity) => {
     try {
-      const response =
-        await axios.get`https://api.aladhan.com/v1/timingsByCity?country=MA&city=${selectedCity}`();
+      const response = await axios.get(
+        `https://api.aladhan.com/v1/timingsByCity?country=MA&city=${selectedCity}`
+      );
       setTimings(response.data.data.timings);
     } catch (error) {
       console.error("Error fetching timings:", error);
@@ -33,9 +43,9 @@ export default function MainContent() {
     const t = moment();
     setToday(t.format("LLLL"));
     return () => {
-      clearInterval;
+      clearInterval(interval);
     };
-  }, []);
+  }, [timings]);
 
   const setupContdownTimer = () => {
     const momentNow = moment();
@@ -67,28 +77,21 @@ export default function MainContent() {
     const nextPrayerObject = prayersArray[prayerIndex];
     const nextPrayerTime = timings[nextPrayerObject.key];
     const nextPrayerTimeMoment = moment(nextPrayerTime, "hh:mm");
-    const remainingTime = moment(nextPrayerTime, "hh:mm").diff(momentNow);
-    if (remainingTime < 0) {
-      const midnightDiff = moment("23:59:59", "hh:mm:ss").diff(momentNow);
-      const fajrToMidnightDiff = nextPrayerTimeMoment.diff(
-        moment("00:00:00", "hh:mm:ss")
-      );
-      const totalDifference = midnightDiff + fajrToMidnightDiff;
+    const diffTime = nextPrayerTimeMoment.diff(momentNow);
+
+    if (diffTime > 0) {
+      const durationRemainingTime = moment.duration(diffTime);
+      const formattedRemainingTime = `${durationRemainingTime.hours()}h ${durationRemainingTime.minutes()}m ${durationRemainingTime.seconds()}s`;
+      setRemainingTime(formattedRemainingTime);
+    } else {
+      setRemainingTime("0h 0m 0s");
     }
-    const durationRemainingTime = moment.duration(remainingTime);
   };
 
   const handleCityChange = (event) => {
     setCity(event.target.value);
   };
-  const prayersArray = [
-    { key: "Fajr", displayName: "Fajr" },
-    { key: "Dhuhr", displayName: "Dhuhr" },
-    { key: "Asr", displayName: "Asr" },
-    { key: "Maghrib", displayName: "Maghrib" },
-    { key: "Isha", displayName: "Isha" },
-  ];
-  const [today, setToday] = useState("");
+
   return (
     <>
       <Grid container>
@@ -103,7 +106,7 @@ export default function MainContent() {
             <h2>
               Temps restant pour {prayersArray[nextPrayerIndex].displayName}{" "}
             </h2>
-            <h1>1:22</h1>
+            <h1>{remainingTime}</h1>
           </div>
         </Grid>
       </Grid>
